@@ -1,12 +1,837 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aria's Revision Quiz</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Aria Revision">
+<meta name="theme-color" content="#1a1040">
+<title>Aria's Revision Quiz</title>
+<style>
+  :root {
+    --purple: #534AB7;
+    --purple-light: #8B83E0;
+    --purple-dark: #26215C;
+    --purple-pale: #EEEDFE;
+    --green: #3B6D11;
+    --green-pale: #EAF3DE;
+    --red: #A32D2D;
+    --red-pale: #FCEBEB;
+    --amber: #BA7517;
+    --amber-pale: #FAEEDA;
+    --teal: #0F6E56;
+    --teal-pale: #E1F5EE;
+    --bg: #0e0b2e;
+    --surface: #1a1550;
+    --surface2: #241d6a;
+    --surface3: #2e2680;
+    --text: #f0eeff;
+    --text2: #b0a8e0;
+    --text3: #7870b0;
+    --border: rgba(255,255,255,0.1);
+    --safe-top: env(safe-area-inset-top, 44px);
+    --safe-bottom: env(safe-area-inset-bottom, 20px);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* ── SCREENS ── */
+  .screen { position: absolute; inset: 0; display: flex; flex-direction: column; transition: opacity 0.25s, transform 0.25s; }
+  .screen.hidden { opacity: 0; pointer-events: none; transform: translateY(20px); }
+
+  /* ── HOME SCREEN ── */
+  #home {
+    padding: var(--safe-top) 0 var(--safe-bottom);
+    background: linear-gradient(160deg, #1a1040 0%, #0e0b2e 60%);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .home-header {
+    padding: 24px 24px 8px;
+  }
+
+  .app-title {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+
+  .app-sub {
+    font-size: 14px;
+    color: var(--text2);
+    margin-top: 4px;
+  }
+
+  .exam-countdown {
+    margin: 16px 24px;
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 16px;
+    border: 1px solid var(--border);
+  }
+
+  .countdown-label { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; }
+  .countdown-days { font-size: 36px; font-weight: 700; color: var(--purple-light); line-height: 1; margin: 4px 0 2px; }
+  .countdown-sub { font-size: 13px; color: var(--text2); }
+
+  .section-label {
+    font-size: 12px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 20px 24px 10px;
+  }
+
+  .subject-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 0 24px 24px;
+  }
+
+  .subject-card {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: transform 0.15s, background 0.15s;
+    active: scale(0.97);
+    position: relative;
+    overflow: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .subject-card:active { transform: scale(0.96); }
+  .subject-card.focus-subject { border-color: rgba(240, 153, 123, 0.4); }
+
+  .subject-card::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 60px; height: 60px;
+    border-radius: 0 16px 0 60px;
+    opacity: 0.15;
+  }
+
+  .sc-maths::before { background: #8B83E0; }
+  .sc-science::before { background: #5DCAA5; }
+  .sc-computing::before { background: #85B7EB; }
+  .sc-english::before { background: #FAC775; }
+  .sc-business::before { background: #F0997B; }
+  .sc-catalan::before { background: #ED93B1; }
+  .sc-spanish::before { background: #97C459; }
+
+  .subject-icon { font-size: 24px; margin-bottom: 10px; }
+  .subject-name { font-size: 15px; font-weight: 600; color: var(--text); }
+  .subject-count { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+  .focus-badge {
+    display: inline-block;
+    font-size: 10px;
+    background: rgba(240, 153, 123, 0.2);
+    color: #F0997B;
+    border-radius: 6px;
+    padding: 2px 6px;
+    margin-top: 6px;
+    font-weight: 600;
+  }
+
+  .progress-ring-wrap { margin-top: 8px; }
+  .mini-bar { height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+  .mini-bar-fill { height: 100%; border-radius: 2px; background: var(--purple-light); transition: width 0.3s; }
+
+  /* ── QUIZ SCREEN ── */
+  #quiz {
+    background: var(--bg);
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
+  }
+
+  .quiz-nav {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    gap: 12px;
+  }
+
+  .back-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: none;
+    color: var(--text);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .quiz-subject-name { font-size: 16px; font-weight: 600; flex: 1; }
+
+  .streak-pill {
+    background: rgba(250,206,122,0.15);
+    color: #FAC775;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 20px;
+    display: none;
+    align-items: center;
+    gap: 4px;
+  }
+  .streak-pill.show { display: flex; }
+
+  .quiz-progress-bar {
+    height: 3px;
+    background: var(--surface2);
+    margin: 0 20px 16px;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .quiz-progress-fill { height: 100%; background: var(--purple-light); border-radius: 2px; transition: width 0.4s; }
+
+  .score-row {
+    display: flex;
+    gap: 8px;
+    padding: 0 20px 16px;
+  }
+  .score-pill {
+    flex: 1;
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 8px;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+  .score-pill .val { font-size: 20px; font-weight: 700; display: block; }
+  .score-pill .lbl { font-size: 11px; color: var(--text3); }
+  .score-pill.c-correct .val { color: #97C459; }
+  .score-pill.c-wrong .val { color: #F0997B; }
+  .score-pill.c-left .val { color: var(--purple-light); }
+
+  /* ── CARD ── */
+  .card-viewport {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 20px;
+    perspective: 1200px;
+  }
+
+  .card-outer {
+    width: 100%;
+    max-width: 380px;
+    height: 260px;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .card-inner {
+    width: 100%; height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .card-inner.flipped { transform: rotateY(180deg); }
+
+  .card-face {
+    position: absolute;
+    inset: 0;
+    border-radius: 24px;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 28px 24px;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+
+  .card-front {
+    background: var(--surface);
+  }
+
+  .card-back {
+    background: var(--surface2);
+    transform: rotateY(180deg);
+  }
+
+  .card-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text3);
+    margin-bottom: 16px;
+  }
+
+  .card-question {
+    font-size: 19px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.4;
+  }
+
+  .card-answer {
+    font-size: 16px;
+    color: var(--text);
+    line-height: 1.6;
+    font-weight: 500;
+  }
+
+  .card-hint {
+    font-size: 13px;
+    color: var(--text3);
+    margin-top: 14px;
+    line-height: 1.4;
+  }
+
+  .tap-to-flip {
+    text-align: center;
+    font-size: 13px;
+    color: var(--text3);
+    padding: 12px 0 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  /* ── ACTION BUTTONS ── */
+  .action-row {
+    display: none;
+    gap: 10px;
+    padding: 8px 20px;
+    padding-bottom: calc(8px + var(--safe-bottom));
+  }
+  .action-row.show { display: flex; }
+
+  .action-btn {
+    flex: 1;
+    padding: 16px 8px;
+    border-radius: 16px;
+    border: none;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.1s;
+    -webkit-user-select: none;
+  }
+  .action-btn:active { transform: scale(0.95); }
+
+  .btn-wrong { background: rgba(163,45,45,0.2); color: #F0997B; }
+  .btn-skip { background: var(--surface); color: var(--text3); flex: 0.6; }
+  .btn-correct { background: rgba(59,109,17,0.2); color: #97C459; }
+
+  /* ── DONE SCREEN ── */
+  #done {
+    background: var(--bg);
+    padding: var(--safe-top) 24px var(--safe-bottom);
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .done-circle {
+    width: 140px; height: 140px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 3px solid var(--purple);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    margin-bottom: 28px;
+  }
+
+  .done-pct { font-size: 42px; font-weight: 800; color: var(--purple-light); line-height: 1; }
+  .done-pct-label { font-size: 13px; color: var(--text3); margin-top: 2px; }
+  .done-subject-name { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .done-msg { font-size: 15px; color: var(--text2); text-align: center; line-height: 1.5; margin-bottom: 32px; max-width: 280px; }
+
+  .done-stats {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 32px;
+    width: 100%;
+    max-width: 300px;
+  }
+  .done-stat {
+    flex: 1; text-align: center;
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 14px 8px;
+    border: 1px solid var(--border);
+  }
+  .done-stat .v { font-size: 24px; font-weight: 700; }
+  .done-stat .l { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .done-stat.cc .v { color: #97C459; }
+  .done-stat.cw .v { color: #F0997B; }
+
+  .done-btns { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 300px; }
+  .done-btn {
+    width: 100%; padding: 16px;
+    border-radius: 14px; border: none;
+    font-size: 16px; font-weight: 600;
+    cursor: pointer; transition: transform 0.1s;
+  }
+  .done-btn:active { transform: scale(0.97); }
+  .done-btn-primary { background: var(--purple); color: white; }
+  .done-btn-secondary { background: var(--surface); color: var(--text2); }
+
+  /* swipe hint */
+  .swipe-dots {
+    display: flex; gap: 6px; justify-content: center;
+    padding: 4px 0 12px;
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--surface2); }
+  .dot.active { background: var(--purple-light); width: 18px; border-radius: 3px; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: calc(120px + var(--safe-bottom));
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(30,25,70,0.95);
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 100;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
 </head>
 <body>
-    <h1>Welcome to Aria's Revision Quiz</h1>
-    <p>Test your knowledge!</p>
+
+<!-- HOME SCREEN -->
+<div class="screen" id="home">
+  <div class="home-header">
+    <div class="app-title">Aria's Revision</div>
+    <div class="app-sub">Year 10 · Exams 26–29 May</div>
+  </div>
+
+  <div class="exam-countdown">
+    <div class="countdown-label">Time until first exam</div>
+    <div class="countdown-days" id="countdown-days">—</div>
+    <div class="countdown-sub" id="countdown-sub">days to go</div>
+  </div>
+
+  <div class="section-label">Pick a subject</div>
+
+  <div class="subject-grid" id="subject-grid"></div>
+</div>
+
+<!-- QUIZ SCREEN -->
+<div class="screen hidden" id="quiz">
+  <div class="quiz-nav">
+    <button class="back-btn" onclick="goHome()">‹</button>
+    <div class="quiz-subject-name" id="quiz-subject-name"></div>
+    <div class="streak-pill" id="streak-pill">🔥 <span id="streak-num">0</span></div>
+  </div>
+
+  <div class="quiz-progress-bar">
+    <div class="quiz-progress-fill" id="quiz-progress"></div>
+  </div>
+
+  <div class="score-row">
+    <div class="score-pill c-correct"><span class="val" id="s-correct">0</span><span class="lbl">correct</span></div>
+    <div class="score-pill c-wrong"><span class="val" id="s-wrong">0</span><span class="lbl">wrong</span></div>
+    <div class="score-pill c-left"><span class="val" id="s-left">0</span><span class="lbl">left</span></div>
+  </div>
+
+  <div class="card-viewport">
+    <div class="card-outer" id="card-outer" onclick="flipCard()">
+      <div class="card-inner" id="card-inner">
+        <div class="card-face card-front">
+          <div class="card-label" id="card-label">question</div>
+          <div class="card-question" id="card-question">Loading…</div>
+        </div>
+        <div class="card-face card-back">
+          <div class="card-label">answer</div>
+          <div class="card-answer" id="card-answer"></div>
+          <div class="card-hint" id="card-hint"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tap-to-flip" id="tap-hint">
+    <span>tap card to reveal</span>
+  </div>
+
+  <div class="action-row" id="action-row">
+    <button class="action-btn btn-wrong" onclick="markWrong()">✗ Wrong</button>
+    <button class="action-btn btn-skip" onclick="nextCard()">Skip</button>
+    <button class="action-btn btn-correct" onclick="markCorrect()">✓ Right</button>
+  </div>
+</div>
+
+<!-- DONE SCREEN -->
+<div class="screen hidden" id="done">
+  <div class="done-circle">
+    <div class="done-pct" id="done-pct">0%</div>
+    <div class="done-pct-label">correct</div>
+  </div>
+  <div class="done-subject-name" id="done-subject-name"></div>
+  <div class="done-msg" id="done-msg"></div>
+  <div class="done-stats">
+    <div class="done-stat cc"><div class="v" id="done-correct">0</div><div class="l">correct</div></div>
+    <div class="done-stat cw"><div class="v" id="done-wrong">0</div><div class="l">wrong</div></div>
+  </div>
+  <div class="done-btns">
+    <button class="done-btn done-btn-primary" onclick="retryWrong()">Retry wrong ones</button>
+    <button class="done-btn done-btn-secondary" onclick="goHome()">Choose subject</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUBJECTS = {
+  maths: {
+    name: "Maths", icon: "📐", focus: true,
+    color: "#8B83E0", cls: "sc-maths",
+    cards: [
+      { q: "What is the quadratic formula?", a: "x = (−b ± √(b²−4ac)) / 2a", hint: "Used when factorising doesn't work easily" },
+      { q: "Factorise and solve: x² + 5x + 6 = 0", a: "(x + 2)(x + 3) = 0 → x = −2 or x = −3", hint: "Find two numbers that multiply to 6 and add to 5" },
+      { q: "Complete the square for x² + 6x", a: "(x + 3)² − 9", hint: "Halve the middle coefficient, square it, then adjust" },
+      { q: "Circle theorem: angle at centre vs circumference?", a: "Angle at the centre = 2 × angle at the circumference (same arc)", hint: "The centre angle is always double the circumference angle" },
+      { q: "Angles in a cyclic quadrilateral?", a: "Opposite angles add up to 180°", hint: "All 4 vertices lie on the circle" },
+      { q: "Tangent-radius theorem?", a: "A tangent to a circle is perpendicular (90°) to the radius at the point of contact", hint: "Think of it as a right angle where the tangent touches" },
+      { q: "What does the alternate segment theorem say?", a: "The angle between a tangent and chord = the inscribed angle in the alternate segment", hint: "Tangent-chord angle equals angle in opposite arc" },
+      { q: "Simplify √50", a: "5√2", hint: "50 = 25 × 2, and √25 = 5" },
+      { q: "Simplify √12 + √27", a: "2√3 + 3√3 = 5√3", hint: "Simplify each surd first, then add like terms" },
+      { q: "Expand and simplify (2 + √3)(2 − √3)", a: "4 − 3 = 1", hint: "Difference of two squares: a² − b²" },
+      { q: "Rationalise the denominator: 1/√5", a: "√5 / 5", hint: "Multiply numerator and denominator by √5" },
+      { q: "On a distance-time graph, what does a steeper line mean?", a: "A greater speed — gradient = speed", hint: "Flat line = stationary; steeper = faster" },
+      { q: "On a speed-time graph, what does the area under the curve represent?", a: "The distance travelled", hint: "Area = distance; gradient = acceleration" },
+      { q: "Volume formula for a cone?", a: "V = ⅓πr²h", hint: "One third of a cylinder's volume" },
+      { q: "Curved surface area of a cone?", a: "πrl  (l = slant height)", hint: "Total SA = πrl + πr²" },
+      { q: "What is a frustum?", a: "A cone with its top cut off (truncated cone)", hint: "Frustum volume = big cone − small cone" },
+      { q: "Pythagoras theorem — state it", a: "a² + b² = c²  (c = hypotenuse)", hint: "Only for right-angled triangles" },
+      { q: "SOH CAH TOA: what does each part mean?", a: "Sin = Opp/Hyp · Cos = Adj/Hyp · Tan = Opp/Adj", hint: "Some Old Horses Canter And Hunt Till Old Age" },
+      { q: "Area of a triangle using the sine rule?", a: "Area = ½ab sin C", hint: "a and b are two sides, C is the angle between them" },
+      { q: "Sine rule — state it", a: "a/sin A = b/sin B = c/sin C", hint: "Use when you have an angle and its opposite side" },
+      { q: "Cosine rule — state it", a: "a² = b² + c² − 2bc cos A", hint: "Use when you have 3 sides or 2 sides + included angle" },
+      { q: "Speed formula triangle?", a: "Speed = Distance ÷ Time  (D = S × T)", hint: "Cover what you want to find in the triangle" },
+    ]
+  },
+  science: {
+    name: "Science", icon: "🔬", focus: true,
+    color: "#5DCAA5", cls: "sc-science",
+    cards: [
+      { q: "Difference between mitosis and meiosis?", a: "Mitosis → 2 identical cells (body cells). Meiosis → 4 genetically different cells (sex cells)", hint: "Mitosis = identical copies; Meiosis = variation" },
+      { q: "Word equation for photosynthesis?", a: "Carbon dioxide + water → glucose + oxygen  (light energy)", hint: "Plants make food using light in chloroplasts" },
+      { q: "Word equation for aerobic respiration?", a: "Glucose + oxygen → carbon dioxide + water  (+ energy released)", hint: "Releases energy for all life processes" },
+      { q: "What is the difference between an element and a compound?", a: "Element: one type of atom. Compound: two or more different atoms chemically bonded", hint: "H₂O is a compound; O₂ is an element" },
+      { q: "What is Newton's Second Law?", a: "Force = mass × acceleration  (F = ma)", hint: "Bigger mass or bigger acceleration = bigger force" },
+      { q: "What is a scalar vs a vector quantity?", a: "Scalar: magnitude only (speed, mass). Vector: magnitude + direction (velocity, force)", hint: "Vectors need an arrow — they have direction" },
+      { q: "Equation for electrical power?", a: "P = IV  (Power = Current × Voltage)", hint: "Also P = I²R or P = V²/R" },
+      { q: "What is the test for hydrogen gas?", a: "Lit splint makes a squeaky pop", hint: "Hydrogen burns rapidly — very flammable" },
+      { q: "What is ionisation?", a: "An atom gains or loses electrons to become a charged ion", hint: "Lose electrons → positive; gain electrons → negative" },
+      { q: "What does the nucleus of an atom contain?", a: "Protons (positive) and neutrons (neutral)", hint: "Electrons orbit the nucleus in shells" },
+      { q: "What is osmosis?", a: "The movement of water molecules across a semi-permeable membrane from a dilute to a concentrated solution", hint: "Water moves down its concentration gradient" },
+      { q: "What is the role of the mitochondria?", a: "Site of aerobic respiration — produces ATP (energy) for the cell", hint: "Often called the 'powerhouse of the cell'" },
+      { q: "What is a double bond? Give an example.", a: "When two atoms share two pairs of electrons. E.g. O=O in oxygen (O₂) or C=O in CO₂", hint: "Stronger than a single bond, shorter bond length" },
+    ]
+  },
+  computing: {
+    name: "Computing", icon: "💻", focus: true,
+    color: "#85B7EB", cls: "sc-computing",
+    cards: [
+      { q: "Convert binary 1010 to decimal", a: "8 + 2 = 10", hint: "Positions: 8, 4, 2, 1 (right to left)" },
+      { q: "Convert decimal 13 to binary", a: "1101  (8+4+1)", hint: "Divide by 2 repeatedly and read remainders upwards" },
+      { q: "What does CPU stand for and what does it do?", a: "Central Processing Unit — fetches, decodes and executes instructions", hint: "The 'brain' of the computer" },
+      { q: "Difference between RAM and ROM?", a: "RAM: temporary, volatile (lost when off). ROM: permanent, read-only (e.g. BIOS startup)", hint: "RAM = working memory; ROM = firmware" },
+      { q: "What does len('hello') return in Python?", a: "5", hint: "len() counts characters in a string" },
+      { q: "What is a for loop vs a while loop?", a: "for: repeats a fixed number of times. while: repeats while a condition is True", hint: "for = known count; while = unknown count" },
+      { q: "What does ASCII stand for and what is it used for?", a: "American Standard Code for Information Interchange — maps characters to numbers ('A' = 65)", hint: "Allows computers to store text as numbers" },
+      { q: "What is data compression? Name two types.", a: "Reducing file size. Lossy (loses quality, e.g. JPEG) and Lossless (no quality loss, e.g. PNG, ZIP)", hint: "Lossy = smaller file; Lossless = exact original" },
+      { q: "What does this Python code print? print(2**3)", a: "8  — ** is the exponentiation (power) operator", hint: "2 to the power of 3 = 2 × 2 × 2" },
+      { q: "What is the difference between a list and a string in Python?", a: "List: ordered mutable collection [ ]. String: immutable sequence of characters ' '", hint: "You can change list items; you can't change string characters" },
+      { q: "What is data transmission? Give two methods.", a: "Sending data between devices. Methods: serial (one bit at a time) and parallel (multiple bits simultaneously)", hint: "Serial is more reliable over long distances" },
+      { q: "What is a logic gate? Name three types.", a: "A circuit that performs a logical operation. Types: AND, OR, NOT (also NAND, NOR, XOR)", hint: "AND = both inputs true; OR = at least one true; NOT = flips the input" },
+    ]
+  },
+  english: {
+    name: "English Lit", icon: "📖",
+    color: "#FAC775", cls: "sc-english",
+    cards: [
+      { q: "Main theme of 'An Inspector Calls'?", a: "Collective social responsibility — everyone is responsible for each other's wellbeing", hint: "Priestley was a socialist; he wrote it as a moral lesson" },
+      { q: "Who is Eva Smith and what does she represent?", a: "A working-class woman destroyed by the Birlings' selfishness — she represents the vulnerable lower class", hint: "We never see her; she exists only through others' guilt" },
+      { q: "What does Inspector Goole represent?", a: "A moral conscience / socialist values — his name sounds like 'ghoul', suggesting he may be supernatural", hint: "He forces every character to confront their responsibility" },
+      { q: "What is the PEEA method?", a: "Point – Evidence – Explain – Analyse. State idea, give quote, explain it, then analyse language choices", hint: "Always link your analysis back to the question" },
+      { q: "What is iambic pentameter?", a: "10 syllables per line: unstressed-STRESSED × 5. da-DUM da-DUM da-DUM da-DUM da-DUM", hint: "Shakespeare used it — counts the rhythm on your fingers" },
+      { q: "What is a semantic field?", a: "A group of words related to the same topic — shows what the writer is emphasising", hint: "E.g. war imagery repeated throughout a poem builds a theme" },
+      { q: "What effect does a rhetorical question create?", a: "Engages the reader directly, makes them reflect, implies the answer is obvious", hint: "Used to persuade or challenge the reader" },
+      { q: "What is the effect of using enjambment in poetry?", a: "The line runs on without a pause — creates momentum, a sense of continuation, or mirrors an emotion like anxiety", hint: "Opposite of end-stopped lines which create a pause" },
+    ]
+  },
+  business: {
+    name: "Business", icon: "📊",
+    color: "#F0997B", cls: "sc-business",
+    cards: [
+      { q: "Difference between revenue and profit?", a: "Revenue = total income from sales. Profit = Revenue − Costs", hint: "Gross profit ignores overheads; net profit includes all costs" },
+      { q: "What is a USP?", a: "Unique Selling Point — what makes a product/service different from competitors", hint: "Used in marketing to attract and retain customers" },
+      { q: "The 4 Ps of the marketing mix?", a: "Product, Price, Place, Promotion", hint: "Sometimes extended to 7 Ps (+ People, Process, Physical evidence)" },
+      { q: "Difference between fixed and variable costs?", a: "Fixed: don't change with output (rent, salaries). Variable: change with output (materials, packaging)", hint: "Total cost = fixed costs + variable costs" },
+      { q: "What is market segmentation?", a: "Dividing a market into groups with similar needs or characteristics (age, income, location, lifestyle)", hint: "Allows businesses to target marketing more effectively" },
+      { q: "What is cash flow?", a: "The movement of money into and out of a business. Positive = more in than out", hint: "A business can be profitable but still have cash flow problems" },
+      { q: "What is the difference between a sole trader and a limited company?", a: "Sole trader: one owner, unlimited liability. Ltd company: shareholders, limited liability — personal assets protected", hint: "Unlimited liability = you can lose personal possessions to pay debts" },
+      { q: "What is break-even?", a: "The point where total revenue = total costs — neither profit nor loss is being made", hint: "Break-even point = Fixed costs ÷ (Selling price − Variable cost per unit)" },
+    ]
+  },
+  catalan: {
+    name: "Català", icon: "🌻",
+    color: "#ED93B1", cls: "sc-catalan",
+    cards: [
+      { q: "Irregular past participle of 'fer' (to do)?", a: "fet", hint: "He fet — I have done" },
+      { q: "Irregular past participle of 'dir' (to say)?", a: "dit", hint: "He dit — I have said" },
+      { q: "Irregular past participle of 'veure' (to see)?", a: "vist", hint: "He vist — I have seen" },
+      { q: "Irregular past participle of 'escriure' (to write)?", a: "escrit", hint: "He escrit — I have written" },
+      { q: "Irregular past participle of 'obrir' (to open)?", a: "obert", hint: "He obert — I have opened" },
+      { q: "When must you write an accent in Catalan?", a: "On stressed syllables that don't follow natural stress rules — remember to apply them in longer texts too, not just short exercises", hint: "Most Catalan words stress the second-to-last syllable by default" },
+      { q: "How do you say 'I have read' in Catalan?", a: "He llegit", hint: "'llegir' → past participle 'llegit'" },
+      { q: "How do you introduce a counterargument formally in Catalan?", a: "Tot i això / Tanmateix / Malgrat (que) / D'altra banda", hint: "Use these to show balance in argumentative writing" },
+    ]
+  },
+  spanish: {
+    name: "Spanish", icon: "🌶️",
+    color: "#97C459", cls: "sc-spanish",
+    cards: [
+      { q: "How do you introduce a point in a formal Spanish essay?", a: "Por un lado… / En primer lugar… / Cabe destacar que…", hint: "These are formal discourse markers — avoid 'yo creo' to start" },
+      { q: "How do you add evidence or support a point?", a: "Además… / Asimismo… / Por ejemplo… / Esto se debe a que…", hint: "Used to build and develop your argument" },
+      { q: "How do you express an opinion formally in Spanish?", a: "En mi opinión… / Desde mi punto de vista… / Considero que…", hint: "More formal than 'Yo creo que'" },
+      { q: "How do you introduce a contrast or counterargument?", a: "Sin embargo… / A pesar de (que)… / Aunque… / Por otro lado…", hint: "Essential for balanced argumentative writing" },
+      { q: "What is a sinestesia (synaesthesia) in literature?", a: "A figure of speech that mixes two different senses — e.g. a 'golden voice' (sound described as colour)", hint: "Must clearly combine TWO different senses to count" },
+      { q: "How do you conclude a formal Spanish essay?", a: "En conclusión… / Para concluir… / En definitiva… / Por todo ello…", hint: "Summarise your main argument — don't introduce new ideas" },
+      { q: "What is personificación (personification)?", a: "Giving human qualities or actions to non-human things — e.g. 'el viento susurraba'", hint: "The wind whispered — the wind is given a human action" },
+      { q: "What is a metáfora (metaphor)?", a: "A direct comparison saying one thing IS another — not 'like' something (that's a simile)", hint: "E.g. 'La vida es un sueño' — life is a dream" },
+    ]
+  }
+};
+
+let currentSubject = null;
+let deck = [];
+let idx = 0;
+let correct = 0;
+let wrong = 0;
+let streak = 0;
+let flipped = false;
+let wrongCards = [];
+
+// ── COUNTDOWN ──
+function updateCountdown() {
+  const exam = new Date('2025-05-26T09:00:00');
+  const now = new Date();
+  const diff = Math.ceil((exam - now) / (1000 * 60 * 60 * 24));
+  const el = document.getElementById('countdown-days');
+  const sub = document.getElementById('countdown-sub');
+  if (diff > 0) {
+    el.textContent = diff;
+    sub.textContent = diff === 1 ? 'day to go — you can do this!' : 'days to go';
+  } else if (diff === 0) {
+    el.textContent = '🎯';
+    sub.textContent = 'Exam day — good luck Aria!';
+  } else {
+    el.textContent = '✓';
+    sub.textContent = 'Exams done!';
+  }
+}
+
+// ── BUILD HOME ──
+function buildHome() {
+  const grid = document.getElementById('subject-grid');
+  grid.innerHTML = '';
+  for (const [key, s] of Object.entries(SUBJECTS)) {
+    const best = getBest(key);
+    const card = document.createElement('div');
+    card.className = 'subject-card ' + s.cls + (s.focus ? ' focus-subject' : '');
+    card.onclick = () => startSubject(key);
+    const barWidth = best !== null ? Math.round(best) : 0;
+    card.innerHTML = `
+      <div class="subject-icon">${s.icon}</div>
+      <div class="subject-name">${s.name}</div>
+      <div class="subject-count">${s.cards.length} cards</div>
+      ${s.focus ? '<div class="focus-badge">focus topic</div>' : ''}
+      ${best !== null ? `<div class="mini-bar"><div class="mini-bar-fill" style="width:${barWidth}%"></div></div>` : ''}
+    `;
+    grid.appendChild(card);
+  }
+}
+
+// ── STORAGE (best scores) ──
+function getBest(key) {
+  try { const v = localStorage.getItem('best_' + key); return v !== null ? parseFloat(v) : null; } catch(e) { return null; }
+}
+function saveBest(key, pct) {
+  try { const old = getBest(key); if (old === null || pct > old) localStorage.setItem('best_' + key, pct); } catch(e) {}
+}
+
+// ── QUIZ LOGIC ──
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startSubject(key) {
+  currentSubject = key;
+  deck = shuffle(SUBJECTS[key].cards);
+  idx = 0; correct = 0; wrong = 0; streak = 0; wrongCards = [];
+  showScreen('quiz');
+  document.getElementById('quiz-subject-name').textContent = SUBJECTS[key].name;
+  showCard();
+}
+
+function showCard() {
+  if (idx >= deck.length) { showDone(); return; }
+  const card = deck[idx];
+  document.getElementById('card-label').textContent = SUBJECTS[currentSubject].name;
+  document.getElementById('card-question').textContent = card.q;
+  document.getElementById('card-answer').textContent = card.a;
+  document.getElementById('card-hint').textContent = card.hint ? '💡 ' + card.hint : '';
+  document.getElementById('card-inner').classList.remove('flipped');
+  document.getElementById('action-row').classList.remove('show');
+  document.getElementById('tap-hint').style.display = 'flex';
+  flipped = false;
+  updateScores();
+}
+
+function flipCard() {
+  if (!flipped && idx < deck.length) {
+    document.getElementById('card-inner').classList.add('flipped');
+    document.getElementById('action-row').classList.add('show');
+    document.getElementById('tap-hint').style.display = 'none';
+    flipped = true;
+  }
+}
+
+function markCorrect() {
+  correct++; streak++;
+  const sp = document.getElementById('streak-pill');
+  const sn = document.getElementById('streak-num');
+  if (streak >= 2) { sp.classList.add('show'); sn.textContent = streak; }
+  if (streak === 3) showToast('🔥 3 in a row!');
+  if (streak === 5) showToast('⚡ 5 streak — unstoppable!');
+  idx++; showCard();
+}
+
+function markWrong() {
+  wrong++; streak = 0;
+  document.getElementById('streak-pill').classList.remove('show');
+  wrongCards.push(deck[idx]);
+  idx++; showCard();
+}
+
+function nextCard() {
+  streak = 0;
+  document.getElementById('streak-pill').classList.remove('show');
+  idx++; showCard();
+}
+
+function updateScores() {
+  const left = Math.max(0, deck.length - idx);
+  document.getElementById('s-correct').textContent = correct;
+  document.getElementById('s-wrong').textContent = wrong;
+  document.getElementById('s-left').textContent = left;
+  document.getElementById('quiz-progress').style.width = (deck.length > 0 ? (idx / deck.length) * 100 : 0) + '%';
+}
+
+function showDone() {
+  const total = correct + wrong;
+  const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
+  saveBest(currentSubject, pct);
+  document.getElementById('done-pct').textContent = pct + '%';
+  document.getElementById('done-subject-name').textContent = SUBJECTS[currentSubject].name;
+  document.getElementById('done-correct').textContent = correct;
+  document.getElementById('done-wrong').textContent = wrong;
+  let msg = '';
+  if (pct >= 90) msg = 'Brilliant round! You really know this material. Keep it up! 🏆';
+  else if (pct >= 70) msg = 'Solid work! A couple more rounds will lock this in.';
+  else if (pct >= 50) msg = 'Good effort — retry the wrong ones to strengthen those gaps.';
+  else msg = 'Keep going — this is where the real learning happens. Retry the wrong ones!';
+  document.getElementById('done-msg').textContent = msg;
+  buildHome();
+  showScreen('done');
+}
+
+function retryWrong() {
+  if (wrongCards.length === 0) { showToast('No wrong answers to retry!'); goHome(); return; }
+  deck = shuffle(wrongCards);
+  idx = 0; correct = 0; wrong = 0; streak = 0; wrongCards = [];
+  showScreen('quiz');
+  showCard();
+}
+
+function goHome() {
+  showScreen('home');
+}
+
+// ── SCREENS ──
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+// ── TOAST ──
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ── SWIPE SUPPORT ──
+let touchStartX = 0, touchStartY = 0;
+document.getElementById('card-outer').addEventListener('touchstart', e => {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+}, { passive: true });
+
+document.getElementById('card-outer').addEventListener('touchend', e => {
+  if (!flipped) return;
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  const dy = e.changedTouches[0].clientY - touchStartY;
+  if (Math.abs(dx) < Math.abs(dy) || Math.abs(dx) < 50) return;
+  if (dx > 0) { markCorrect(); showToast('✓ Correct!'); }
+  else { markWrong(); showToast('✗ Wrong — will come back'); }
+}, { passive: true });
+
+// ── INIT ──
+updateCountdown();
+buildHome();
+</script>
 </body>
 </html>

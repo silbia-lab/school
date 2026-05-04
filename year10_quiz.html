@@ -151,22 +151,22 @@
     <div class="card-outer" id="card-outer" onclick="flipCard()">
       <div class="card-inner" id="card-inner">
         <div class="card-face card-front">
-          <div class="card-label" id="card-label">pregunta</div>
+          <div class="card-label" id="card-label">question</div>
           <div class="card-question" id="card-question">Loading…</div>
         </div>
         <div class="card-face card-back">
-          <div class="card-label">resposta</div>
+          <div class="card-label">answer</div>
           <div class="card-answer" id="card-answer"></div>
           <div class="card-hint" id="card-hint"></div>
         </div>
       </div>
     </div>
   </div>
-  <div class="tap-to-flip" id="tap-hint"><span>toca la targeta per veure la resposta</span></div>
+  <div class="tap-to-flip" id="tap-hint"><span>tap card to reveal</span></div>
   <div class="action-row" id="action-row">
-    <button class="action-btn btn-wrong" onclick="markWrong()">✗ Malament</button>
+    <button class="action-btn btn-wrong" onclick="markWrong()">✗ Wrong</button>
     <button class="action-btn btn-skip" onclick="nextCard()">Skip</button>
-    <button class="action-btn btn-correct" onclick="markCorrect()">✓ Bé</button>
+    <button class="action-btn btn-correct" onclick="markCorrect()">✓ Right</button>
   </div>
 </div>
 
@@ -174,17 +174,17 @@
 <div class="screen hidden" id="done">
   <div class="done-circle">
     <div class="done-pct" id="done-pct">0%</div>
-    <div class="done-pct-label">correcte</div>
+    <div class="done-pct-label">correct</div>
   </div>
   <div class="done-subject-name" id="done-subject-name"></div>
   <div class="done-msg" id="done-msg"></div>
   <div class="done-stats">
-    <div class="done-stat cc"><div class="v" id="done-correct">0</div><div class="l">correcte</div></div>
-    <div class="done-stat cw"><div class="v" id="done-wrong">0</div><div class="l">incorrecte</div></div>
+    <div class="done-stat cc"><div class="v" id="done-correct">0</div><div class="l">correct</div></div>
+    <div class="done-stat cw"><div class="v" id="done-wrong">0</div><div class="l">wrong</div></div>
   </div>
   <div class="done-btns">
-    <button class="done-btn done-btn-primary" onclick="retryWrong()">Torna a intentar els incorrectes</button>
-    <button class="done-btn done-btn-secondary" onclick="goHome()">Escull assignatura</button>
+    <button class="done-btn done-btn-primary" onclick="retryWrong()">Retry wrong ones</button>
+    <button class="done-btn done-btn-secondary" onclick="goHome()">Choose subject</button>
   </div>
 </div>
 
@@ -315,7 +315,7 @@ const SUBJECTS = {
   },
 
   english: {
-    name: "English Lit", icon: "📖", cls: "sc-english",
+    name: "English Literature", icon: "📖", cls: "sc-english",
     cards: [
       { q: "What is 'A Taste of Honey' about?", a: "A working-class girl Jo lives with her unstable mother Helen in 1950s Salford. Jo becomes pregnant by a Black sailor, is briefly cared for by Geof, a gay art student, and ends up abandoned when her mother returns.", hint: "Written by Shelagh Delaney, set in post-war industrial England" },
       { q: "What are the main themes in 'A Taste of Honey'?", a: "Class and poverty, mother-daughter relationships, race and belonging, loneliness and unconventional family, gender and sexuality", hint: "All themes connect to Jo being on the margins of society" },
@@ -422,7 +422,7 @@ function buildHome() {
       <div class="subject-icon">${s.icon}</div>
       <div class="subject-name">${s.name}</div>
       <div class="subject-count">${s.cards.length} cartes</div>
-      ${s.focus ? '<div class="focus-badge">prioritat!</div>' : ''}
+      ${s.focus ? '<div class="focus-badge">focus topic</div>' : ''}
       ${best !== null ? `<div class="mini-bar"><div class="mini-bar-fill" style="width:${barWidth}%"></div></div>` : ''}
     `;
     grid.appendChild(card);
@@ -485,9 +485,9 @@ function markCorrect() {
   correct++; streak++;
   const sp = document.getElementById('streak-pill');
   if (streak >= 2) { sp.classList.add('show'); document.getElementById('streak-num').textContent = streak; }
-  if (streak === 3) showToast('🔥 3 seguides!');
-  if (streak === 5) showToast('⚡ 5 seguides — increïble!');
-  if (streak === 10) showToast('🏆 10 seguides! Brutal!');
+  if (streak === 3) showToast('🔥 3 in a row!');
+  if (streak === 5) showToast('⚡ 5 streak — unstoppable!');
+  if (streak === 10) showToast('🏆 10 in a row! Amazing!');
   idx++; showCard();
 }
 
@@ -519,17 +519,17 @@ function showDone() {
   document.getElementById('done-subject-name').textContent = SUBJECTS[currentSubject].name;
   document.getElementById('done-correct').textContent = correct;
   document.getElementById('done-wrong').textContent = wrong;
-  let msg = pct >= 90 ? '🏆 Excepcional! Ho saps molt bé. Continua així!'
-    : pct >= 70 ? 'Ben fet! Unes quantes rondes més i ho tindràs al cap.'
-    : pct >= 50 ? 'Bon esforç — torna a intentar els incorrectes per reforçar.'
-    : 'No et rendeixis — és aquí on s\'aprèn de veritat. Practica els incorrectes!';
+  if (pct >= 90) msg = 'Brilliant round! You really know this material. Keep it up! 🏆';
+  else if (pct >= 70) msg = 'Solid work! A couple more rounds will lock this in.';
+  else if (pct >= 50) msg = 'Good effort — retry the wrong ones to strengthen those gaps.';
+  else msg = 'Keep going — this is where the real learning happens. Retry the wrong ones!';
   document.getElementById('done-msg').textContent = msg;
   buildHome();
   showScreen('done');
 }
 
 function retryWrong() {
-  if (wrongCards.length === 0) { showToast('No hi ha incorrectes per repetir!'); goHome(); return; }
+  if (wrongCards.length === 0) { showToast('No wrong answers to retry!'); goHome(); return; }
   deck = shuffle(wrongCards);
   idx = 0; correct = 0; wrong = 0; streak = 0; wrongCards = [];
   showScreen('quiz'); showCard();
@@ -560,8 +560,8 @@ document.getElementById('card-outer').addEventListener('touchend', e => {
   const dx = e.changedTouches[0].clientX - touchStartX;
   const dy = e.changedTouches[0].clientY - touchStartY;
   if (Math.abs(dx) < Math.abs(dy) || Math.abs(dx) < 50) return;
-  if (dx > 0) { markCorrect(); showToast('✓ Correcte!'); }
-  else { markWrong(); showToast('✗ Incorrecte — tornarà a sortir'); }
+  if (dx > 0) { markCorrect(); showToast('✓ Correct!'); }
+  else { markWrong(); showToast('✗ Wrong — will come back'); }
 }, { passive: true });
 
 // ── INIT ──
